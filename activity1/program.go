@@ -1,7 +1,7 @@
 package main
 
 import (
-	activity1 "activity1/pkg"
+	act1 "activity1/pkg"
 	"encoding/csv"
 	"fmt"
 	"io"
@@ -17,65 +17,43 @@ func checkErr(e error) {
 	}
 }
 
-func main() {
-	fmt.Printf("start at %s \n", time.Now().String())
-	resp, errRes := http.Get("https://raw.githubusercontent.com/danielmiessler/SecLists/master/Passwords/Common-Credentials/10k-most-common.txt")
-	checkErr(errRes)
+func getWords() []string {
+	resp, err := http.Get("https://raw.githubusercontent.com/danielmiessler/SecLists/master/Passwords/Common-Credentials/10k-most-common.txt")
+	checkErr(err)
 	body, err := io.ReadAll(resp.Body)
 	checkErr(err)
-	words := strings.Split(string(body), "\n")
-
-	result1 := make(map[string]string)
-	result2 := make(map[string]string)
-	result3 := make(map[string]string)
-	result4 := make(map[string]string)
-	result5 := make(map[string]string)
-
-	generateHash(words[:2000], &result1)
-	generateHash(words[2000:4000], &result2)
-	generateHash(words[4000:6000], &result3)
-	generateHash(words[6000:8000], &result4)
-	generateHash(words[8000:], &result5)
-
-	fmt.Printf("end gen hash at %s \n", time.Now().String())
-
-	records := [][]string{}
-	for k, v := range result1 {
-		records = append(records, []string{k, v})
-	}
-	for k, v := range result2 {
-		records = append(records, []string{k, v})
-	}
-	for k, v := range result3 {
-		records = append(records, []string{k, v})
-	}
-	for k, v := range result4 {
-		records = append(records, []string{k, v})
-	}
-	for k, v := range result5 {
-		records = append(records, []string{k, v})
-	}
-	f, err := os.Create("tmp.csv")
-	w := csv.NewWriter(f)
-	w.WriteAll(records)
-	checkErr(err)
-	fmt.Printf("complete at %s \n", time.Now().String())
-
-	tests := [][]string{}
-	count := 0
-	for _, word := range words {
-		for _, r := range activity1.GenerateHash(word) {
-			count++
-			tests = append(tests, []string{fmt.Sprintf("%v", count), r})
-		}
-	}
-	f, _ = os.Create("tmp1.csv")
-	w = csv.NewWriter(f)
-	w.WriteAll(tests)
+	return strings.Split(string(body), "\n")
 }
 
 func generateHash(words []string, result *map[string]string) {
 	for _, word := range words {
-		activity1.GenerateHashWord(word, result)
+		act1.GenerateHashWithRecursive(word, result)
 	}
+}
+
+func main() {
+	words := getWords()
+	result := make(map[string]string)
+
+	startTime := time.Now()
+	fmt.Printf("start at %s \n", startTime.String())
+
+	generateHash(words, &result)
+
+	fmt.Printf("result : %v \n", len(result))
+	fmt.Printf("end gen hash at %s \n", time.Now().String())
+
+	records := [][]string{}
+	for k, v := range result {
+		records = append(records, []string{k, v})
+	}
+
+	f, err := os.Create("rainbow_table.csv")
+	w := csv.NewWriter(f)
+	w.WriteAll(records)
+	checkErr(err)
+	endTime := time.Now()
+	fmt.Printf("complete at %s \n", endTime.String())
+	fmt.Printf("time %s \n", endTime.Sub(startTime))
+	fmt.Printf("result count %v \n", len(records))
 }

@@ -4,9 +4,12 @@ import (
 	"strings"
 )
 
-func generateCombinations(input string, currentCombination string, index int, result *[]string) {
+func generateCombinations(input string, currentCombination string, index int, result *map[string]string) {
 	if index == len(input) {
-		*result = append(*result, currentCombination)
+		if _, hasValue := (*result)[currentCombination]; !hasValue {
+			currentHashWord := HashSha1(currentCombination)
+			(*result)[currentCombination] = currentHashWord
+		}
 		return
 	}
 
@@ -32,8 +35,6 @@ func generateCombinations(input string, currentCombination string, index int, re
 	}
 }
 
-func GenerateHash(word string) []string {
-	var result []string
-	generateCombinations(word, "", 0, &result)
-	return result
+func GenerateHashWithRecursive(word string, result *map[string]string) {
+	generateCombinations(word, "", 0, result)
 }

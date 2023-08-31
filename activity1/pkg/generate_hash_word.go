@@ -1,12 +1,8 @@
 package activity1
 
 import (
-	"crypto/sha1"
-	"encoding/hex"
 	"strings"
 )
-
-var shaOne = sha1.New()
 
 func GenerateHashWord(word string, hashWord *map[string]string) {
 	combinationWords, hashWords := combinationWord(word, hashWord)
@@ -27,7 +23,7 @@ func combinationWord(word string, hashWord *map[string]string) ([]string, map[st
 		}
 		newWord := strings.Join(combinations, "")
 		words = append(words, newWord)
-		(*hashWord)[hashSha1(newWord)] = newWord
+		(*hashWord)[HashSha1(newWord)] = newWord
 	}
 	return words, *hashWord
 }
@@ -37,73 +33,20 @@ func replaceSimbolWithNumber(word string, words []string, hashWord *map[string]s
 		return
 	}
 
-	oIndexs := []int{}
-	lIndexs := []int{}
-	iIndexs := []int{}
+	indexs := []int{}
 	for i := 0; i < len(word); i++ {
-		if string(word[i]) == "o" {
-			oIndexs = append(oIndexs, i)
-		}
-		if string(word[i]) == "l" {
-			lIndexs = append(lIndexs, i)
-		}
-		if string(word[i]) == "i" {
-			iIndexs = append(iIndexs, i)
+		if string(word[i]) == "o" || string(word[i]) == "i" || string(word[i]) == "l" {
+			indexs = append(indexs, i)
 		}
 	}
 
-	oCombinations := 1 << len(oIndexs)
-	lCombinations := 1 << len(lIndexs)
-	iCombinations := 1 << len(iIndexs)
+	combinationsLength := 1 << len(indexs)
 
 	wordsIndex := 0
 	for {
 		currentWord := words[wordsIndex]
 
-		replace(&words, hashWord, oCombinations, currentWord, oIndexs, "0")
-		replace(&words, hashWord, lCombinations, currentWord, lIndexs, "1")
-		replace(&words, hashWord, iCombinations, currentWord, iIndexs, "1")
-
-		// for i := 1; i < oCombinations; i++ {
-		// 	combinations := strings.Split(currentWord, "")
-		// 	for j, oIndex := range oIndexs {
-		// 		if ((i >> j) & 1) == 1 { // (7 >> 0000 0000) & 0000 0001 =
-		// 			combinations[oIndex] = "0"
-		// 		}
-		// 	}
-		// 	newWord := strings.Join(combinations, "")
-		// 	if (*hashWord)[hasNewWord] == nil {
-		// 		words = append(words, newWord)
-		// 		(*hashWord)[hashSha1(newWord)] = newWord
-		// 	}
-		// }
-		// for i := 1; i < lCombinations; i++ {
-		// 	combinations := strings.Split(currentWord, "")
-		// 	for j, lIndex := range lIndexs {
-		// 		if ((i >> j) & 1) == 1 { // (7 >> 0000 0000) & 0000 0001 =
-		// 			combinations[lIndex] = "1"
-		// 		}
-		// 	}
-		// 	newWord := strings.Join(combinations, "")
-		// 	if (*hashWord)[hasNewWord] == nil {
-		// 		words = append(words, newWord)
-		// 		(*hashWord)[hashSha1(newWord)] = newWord
-		// 	}
-		// }
-		// for i := 1; i < iCombinations; i++ {
-		// 	combinations := strings.Split(currentWord, "")
-		// 	for j, iIndex := range iIndexs {
-		// 		if ((i >> j) & 1) == 1 { // (7 >> 0000 0000) & 0000 0001 =
-		// 			combinations[iIndex] = "1"
-		// 		}
-		// 	}
-		// 	newWord := strings.Join(combinations, "")
-		// 	hasNewWord := hashSha1(newWord)
-		// 	if (*hashWord)[hasNewWord] == nil {
-		// 		words = append(words, newWord)
-		// 		(*hashWord)[hashSha1(newWord)] = newWord
-		// 	}
-		// }
+		replace(&words, hashWord, combinationsLength, currentWord, indexs)
 
 		wordsIndex++
 		if wordsIndex >= len(words) {
@@ -112,25 +55,27 @@ func replaceSimbolWithNumber(word string, words []string, hashWord *map[string]s
 	}
 }
 
-func replace(words *[]string, hashWord *map[string]string, allCombinations int, currentWord string, indexs []int, replacement string) {
-	for i := 1; i < allCombinations; i++ {
+func replace(words *[]string, hashWord *map[string]string, allCombinations int, currentWord string, indexs []int) {
+	for i := 0; i < allCombinations; i++ {
 		combinations := strings.Split(currentWord, "")
-		for j, iIndex := range indexs {
+		for j, index := range indexs {
 			if ((i >> j) & 1) == 1 { // (7 >> 0000 0000) & 0000 0001 =
-				combinations[iIndex] = replacement
+				if strings.ToLower(combinations[index]) == "o" {
+					combinations[index] = "0"
+				}
+				if strings.ToLower(combinations[index]) == "l" {
+					combinations[index] = "1"
+				}
+				if strings.ToLower(combinations[index]) == "i" {
+					combinations[index] = "1"
+				}
 			}
 		}
 		newWord := strings.Join(combinations, "")
-		hasNewWord := hashSha1(newWord)
-		if _, ok := (*hashWord)[hasNewWord]; ok {
+		hasNewWord := HashSha1(newWord)
+		if _, isContain := (*hashWord)[hasNewWord]; !isContain {
 			*words = append(*words, newWord)
-			(*hashWord)[hashSha1(newWord)] = newWord
+			(*hashWord)[HashSha1(newWord)] = newWord
 		}
 	}
-}
-
-func hashSha1(word string) string {
-	shaOne.Reset()
-	shaOne.Write([]byte(word))
-	return hex.EncodeToString(shaOne.Sum(nil))
 }
